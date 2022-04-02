@@ -5,41 +5,18 @@
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Slider?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.media.MediaView?>
 
-<VBox fx:id="vBox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="652.0" prefWidth="894.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="bootstrap.Controller">
-   <children>
-      <AnchorPane fx:id="anchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="652.0" prefWidth="894.0">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="479.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="bootstrap.Controller">
+   <center>
+      <StackPane prefHeight="150.0" prefWidth="200.0" BorderPane.alignment="CENTER">
          <children>
-            <MediaView fx:id="mediaView" fitHeight="540.0" fitWidth="894.0" layoutX="10.0" layoutY="10.0" AnchorPane.bottomAnchor="80.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="30.0" />
-            <MenuBar layoutX="10.0" layoutY="10.0" prefHeight="27.0" prefWidth="746.0" AnchorPane.bottomAnchor="624.8" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-               <menus>
-                  <Menu mnemonicParsing="false" text="File">
-                     <items>
-                        <MenuItem mnemonicParsing="false" onAction="#openSongMenu" text="Open" />
-                        <MenuItem mnemonicParsing="false" text="Save" />
-                        <MenuItem mnemonicParsing="false" text="Exit" />
-                     </items>
-                  </Menu>
-                  <Menu mnemonicParsing="false" text="Tools">
-                     <items>
-                        <MenuItem mnemonicParsing="false" text="Play" />
-                        <MenuItem mnemonicParsing="false" text="Pause" />
-                        <MenuItem mnemonicParsing="false" text="Forward" />
-                        <MenuItem mnemonicParsing="false" text="Backward" />
-                     </items>
-                  </Menu>
-                  <Menu mnemonicParsing="false" text="Help">
-                     <items>
-                        <MenuItem mnemonicParsing="false" text="About" />
-                     </items>
-                  </Menu>
-               </menus>
-            </MenuBar>
-            <VBox layoutX="10.0" layoutY="10.0" prefHeight="80.0" prefWidth="930.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="572.0">
+            <MediaView fx:id="mediaView" fitHeight="40.0" fitWidth="40.0" />
+            <VBox alignment="BOTTOM_CENTER" prefHeight="200.0" prefWidth="100.0">
                <children>
                   <Slider fx:id="timeSlider" majorTickUnit="10.0" prefHeight="0.0" prefWidth="930.0" showTickLabels="true" showTickMarks="true" />
                   <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="10.0">
@@ -52,6 +29,32 @@
                </children>
             </VBox>
          </children>
-      </AnchorPane>
-   </children>
-</VBox>
+      </StackPane>
+   </center>
+   <top>
+      <MenuBar prefWidth="700.0" BorderPane.alignment="CENTER">
+         <menus>
+            <Menu mnemonicParsing="false" text="File">
+               <items>
+                  <MenuItem mnemonicParsing="false" onAction="#openSongMenu" text="Open" />
+                  <MenuItem mnemonicParsing="false" text="Save" />
+                  <MenuItem mnemonicParsing="false" text="Exit" />
+               </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Tools">
+               <items>
+                  <MenuItem mnemonicParsing="false" text="Play" />
+                  <MenuItem mnemonicParsing="false" text="Pause" />
+                  <MenuItem mnemonicParsing="false" text="Forward" />
+                  <MenuItem mnemonicParsing="false" text="Backward" />
+               </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Help">
+               <items>
+                  <MenuItem mnemonicParsing="false" text="About" />
+               </items>
+            </Menu>
+         </menus>
+      </MenuBar>
+   </top>
+</BorderPane>

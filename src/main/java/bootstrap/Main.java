@@ -19,10 +19,11 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("player.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(Main.class.getResource("player3.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
         primaryStage.setTitle("My Video Player");
         primaryStage.setScene(scene);
+//        primaryStage.setFullScreen(true);
         primaryStage.setMaximized(true);
         primaryStage.show();
         stage = primaryStage;

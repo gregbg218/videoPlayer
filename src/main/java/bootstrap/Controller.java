@@ -1,5 +1,7 @@
 package bootstrap;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -10,6 +12,7 @@ import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -34,6 +37,9 @@ public class Controller implements Initializable {
 
     @FXML
     private AnchorPane anchorPane;
+
+    @FXML
+    private StackPane stackPane;
 
     @FXML
     public VBox vBox;
@@ -68,6 +74,13 @@ public class Controller implements Initializable {
 
             mediaPlayer = new MediaPlayer(media);
             mediaView.setMediaPlayer(mediaPlayer);
+            DoubleProperty widthProp = mediaView.fitWidthProperty();
+            DoubleProperty heightProp = mediaView.fitHeightProperty();
+
+            widthProp.bind(Bindings.selectDouble(mediaView.sceneProperty(), "width"));
+            heightProp.bind(Bindings.selectDouble(mediaView.sceneProperty(), "height"));
+            
+
         }
         catch (MalformedURLException mu)
         {
@@ -108,6 +121,7 @@ public class Controller implements Initializable {
 
     @FXML
     void play(ActionEvent event)   {
+
         try{
             MediaPlayer.Status status= mediaPlayer.getStatus();
 
@@ -155,6 +169,13 @@ public class Controller implements Initializable {
             System.out.println(e);
             logger.info(e.toString());
         }
+
+//        DoubleProperty widthProp = stackPane.fit;
+//        DoubleProperty heightProp = mediaView.fitHeightProperty();
+//
+//        widthProp.bind(Bindings.selectDouble(mediaView.sceneProperty(), "width"));
+//        heightProp.bind(Bindings.selectDouble(mediaView.sceneProperty(), "height"));
+
 
     }
 }
