@@ -1,6 +1,11 @@
 package bootstrap;
 
 
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -14,13 +19,14 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
+import uk.co.caprica.vlcj.player.base.MediaPlayer;
+import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
 import uk.co.caprica.vlcj.player.base.StatusApi;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 
@@ -30,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.concurrent.TimeUnit;
 
 import static uk.co.caprica.vlcj.javafx.videosurface.ImageViewVideoSurfaceFactory.videoSurfaceForImageView;
 
@@ -72,60 +79,37 @@ public class Controller implements Initializable {
 
     @FXML
     void openSongMenu(ActionEvent event) {
-        try {
-            FileChooser fileChooser = new FileChooser();
-            File file = fileChooser.showOpenDialog(null);
+        FileChooser fileChooser = new FileChooser();
+        File file = fileChooser.showOpenDialog(null);
 //            Media media = new Media(file.toURI().toURL().toString());
-            stage = Main.getStage();
-            stage.setTitle(file.getName());
-            setupVlcJ(file.toURI().toURL().toString());
+        stage = Main.getStage();
+        stage.setTitle(file.getName());
+        setupVlcJ(file.getAbsolutePath());
 
 //            if(mediaPlayer!=null)
 //                mediaPlayer.dispose();
 //
 //            mediaPlayer = new MediaPlayer(media);
 //            mediaView.setMediaPlayer(mediaPlayer);
-//            DoubleProperty widthProp = mediaView.fitWidthProperty();
-//            DoubleProperty heightProp = mediaView.fitHeightProperty();
-//
-//            widthProp.bind(Bindings.selectDouble(mediaView.sceneProperty(), "width"));
-//            heightProp.bind(Bindings.selectDouble(mediaView.sceneProperty(), "height"));
-            
+        DoubleProperty widthProp = videoImageView.fitWidthProperty();
+        DoubleProperty heightProp = videoImageView.fitHeightProperty();
 
-        }
-        catch (MalformedURLException mu)
-        {
-            System.out.println(mu);
-            logger.info(mu.toString());
-        }
+        widthProp.bind(Bindings.selectDouble(videoImageView.sceneProperty(), "width"));
+        heightProp.bind(Bindings.selectDouble(videoImageView.sceneProperty(), "height"));
 
-//        mediaPlayer.setOnReady(
-//                ()->{
-//                    timeSlider.setMin(0);
-//                    timeSlider.setMax(mediaPlayer.getMedia().getDuration().toMinutes());
-//                    timeSlider.setValue(0);
-//                }
-//
-//        );
-//        mediaPlayer.currentTimeProperty().addListener(new ChangeListener<Duration>() {
-//            @Override
-//            public void changed(ObservableValue<? extends Duration> observable, Duration oldValue, Duration newValue) {
-//                Duration currentPosition = mediaPlayer.getCurrentTime();
-//                timeSlider.setValue(currentPosition.toMinutes());
-//            }
-//        });
-//
-//        timeSlider.valueProperty().addListener(new ChangeListener<Number>() {
-//            @Override
-//            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-//                if(timeSlider.isPressed())
-//                {
-//                    double position =  timeSlider.getValue();
-//                    mediaPlayer.seek(new Duration(position*60*1000));
-//                }
-//
-//            }
-//        });
+
+        timeSlider.valueProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                if(timeSlider.isPressed())
+                {
+                    long position = (long) timeSlider.getValue()*60000;
+//                    vlcJMediaPlayer.seek(new Duration(position*60000));
+                    vlcJMediaPlayer.controls().setPosition(position);
+                }
+
+            }
+        });
     }
 
 
@@ -177,15 +161,15 @@ public class Controller implements Initializable {
             System.out.println(e);
             logger.info(e.toString());
         }
-        videoImageView.fitWidthProperty().bind(stackPane.widthProperty());
-        videoImageView.fitHeightProperty().bind(stackPane.heightProperty());
-        stackPane.widthProperty().addListener((observableValue, oldValue, newValue) -> {
-            // If you need to know about resizes
-        });
-
-        stackPane.heightProperty().addListener((observableValue, oldValue, newValue) -> {
-            // If you need to know about resizes
-        });
+//        videoImageView.fitWidthProperty().bind(stackPane.widthProperty());
+//        videoImageView.fitHeightProperty().bind(stackPane.heightProperty());
+//        stackPane.widthProperty().addListener((observableValue, oldValue, newValue) -> {
+//            // If you need to know about resizes
+//        });
+//
+//        stackPane.heightProperty().addListener((observableValue, oldValue, newValue) -> {
+//            // If you need to know about resizes
+//        });
 
     }
 
@@ -194,10 +178,25 @@ public class Controller implements Initializable {
         MediaPlayerFactory mediaPlayerFactory = new MediaPlayerFactory();
         vlcJMediaPlayer = mediaPlayerFactory.mediaPlayers().newEmbeddedMediaPlayer();
         vlcJMediaPlayer.videoSurface().set(videoSurfaceForImageView(this.videoImageView));
-        stackPane.setStyle("-fx-background-color: black;");
+        vlcJMediaPlayer.events().addMediaPlayerEventListener(new MediaPlayerEventAdapter() {
+            @Override
+            public void timeChanged(MediaPlayer mediaPlayer, long newTime)
+            {
+                newTime=TimeUnit.MILLISECONDS.toMinutes(newTime);
+                timeSlider.setValue(newTime);
+            }
+        });
+//        stackPane.setStyle("-fx-background-color: black;");
 //        stackPane.setCenter(videoImageView);
-        vlcJMediaPlayer.media().play(filePath);
-        vlcJMediaPlayer.controls().setPosition(0.4f);
+        vlcJMediaPlayer.media().startPaused(filePath);
+//        vlcJMediaPlayer.controls().setPosition(0.4f);
+        timeSlider.setMin(0);
+        long durationInMinutes = TimeUnit.MILLISECONDS.toMinutes(vlcJMediaPlayer.status().length());
+        timeSlider.setMax(durationInMinutes);
+        timeSlider.setValue(0);
 
     }
+
+
+
 }
