@@ -1,11 +1,10 @@
 package bootstrap;
 
 
+import domain.ProgressTracker;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -18,22 +17,16 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.media.Media;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
-import uk.co.caprica.vlcj.player.base.StatusApi;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.net.MalformedURLException;
+import java.io.*;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
@@ -44,8 +37,11 @@ import static uk.co.caprica.vlcj.javafx.videosurface.ImageViewVideoSurfaceFactor
 public class Controller implements Initializable {
 
     private final AtomicBoolean tracking = new AtomicBoolean();
+    private ProgressTracker progressTracker;
+    private File currentFile;
     EmbeddedMediaPlayer vlcJMediaPlayer;
     Stage stage ;
+
     public static Logger logger = LoggerFactory.getLogger(Controller.class);
 
     @FXML
@@ -82,17 +78,29 @@ public class Controller implements Initializable {
     @FXML
     void openSongMenu(ActionEvent event) {
         FileChooser fileChooser = new FileChooser();
-        File file = fileChooser.showOpenDialog(null);
-//            Media media = new Media(file.toURI().toURL().toString());
+        currentFile = fileChooser.showOpenDialog(null);
+        final String filePath = currentFile.getAbsolutePath();
         stage = Main.getStage();
-        stage.setTitle(file.getName());
-        setupVlcJ(file.getAbsolutePath());
+        stage.setTitle(currentFile.getName());
 
-//            if(mediaPlayer!=null)
-//                mediaPlayer.dispose();
-//
-//            mediaPlayer = new MediaPlayer(media);
-//            mediaView.setMediaPlayer(mediaPlayer);
+        stage.setOnCloseRequest(closeEvent ->{
+            float currentPosition=vlcJMediaPlayer.status().position();
+            progressTracker.addProgress(filePath,currentPosition);
+            try {
+                serialize(progressTracker,currentFile.getParentFile()+File.separator+"progress.dat");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        setupVlcJ(filePath);
+
+//        if(file.ex)
+//        {
+//            vlcJMediaPlayer.controls().stop();
+//            vlcJMediaPlayer.release();
+//            vlcJMediaPlayer.release();
+//        }
+
         DoubleProperty widthProp = videoImageView.fitWidthProperty();
         DoubleProperty heightProp = videoImageView.fitHeightProperty();
 
@@ -104,7 +112,12 @@ public class Controller implements Initializable {
         timeSlider.valueProperty().addListener((obs, oldValue, newValue) -> updateMediaPlayerPosition(newValue.floatValue() / 100));
     }
 
-
+    @FXML
+    void addSubtitles(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        File subtitlesFile = fileChooser.showOpenDialog(null);
+        vlcJMediaPlayer.subpictures().setSubTitleFile(subtitlesFile);
+    }
 
     @FXML
     void play(ActionEvent event)   {
@@ -131,16 +144,15 @@ public class Controller implements Initializable {
 
     @FXML
     void forward(ActionEvent event) {
-//        double requiredTime = mediaPlayer.getCurrentTime().toSeconds()+10;
         vlcJMediaPlayer.controls().skipTime(10000);
     }
 
     @FXML
     void rewind(ActionEvent event) {
-//        double requiredTime = mediaPlayer.getCurrentTime().toSeconds()-10;
         vlcJMediaPlayer.controls().skipTime(-10000);
 
     }
+
 
     @Override
     public void initialize(URL location, ResourceBundle resources)
@@ -153,38 +165,35 @@ public class Controller implements Initializable {
             System.out.println(e);
             logger.info(e.toString());
         }
-//        videoImageView.fitWidthProperty().bind(stackPane.widthProperty());
-//        videoImageView.fitHeightProperty().bind(stackPane.heightProperty());
-//        stackPane.widthProperty().addListener((observableValue, oldValue, newValue) -> {
-//            // If you need to know about resizes
-//        });
-//
-//        stackPane.heightProperty().addListener((observableValue, oldValue, newValue) -> {
-//            // If you need to know about resizes
-//        });
 
     }
 
     public void setupVlcJ(String filePath)
     {
+        String serializedFileName = currentFile.getParentFile()+File.separator+"progress.dat";
         MediaPlayerFactory mediaPlayerFactory = new MediaPlayerFactory();
         vlcJMediaPlayer = mediaPlayerFactory.mediaPlayers().newEmbeddedMediaPlayer();
         vlcJMediaPlayer.videoSurface().set(videoSurfaceForImageView(this.videoImageView));
+        borderPane.setStyle("-fx-background-color: black;");
+        vlcJMediaPlayer.media().startPaused(filePath);
+        progressTracker = deSerialize(serializedFileName);
+        if(progressTracker.checkProgressMap(filePath))
+        {
+            vlcJMediaPlayer.controls().setPosition(progressTracker.getProgress(filePath));
+        }
+        else
+        {
+            vlcJMediaPlayer.controls().setPosition(0);
+        }
         vlcJMediaPlayer.events().addMediaPlayerEventListener(new MediaPlayerEventAdapter() {
             @Override
             public void positionChanged(MediaPlayer mediaPlayer, float newPosition) {
                 Platform.runLater(() -> updateSliderPosition(newPosition));
             }
         });
-//        stackPane.setStyle("-fx-background-color: black;");
-//        stackPane.setCenter(videoImageView);
-        vlcJMediaPlayer.media().startPaused(filePath);
-//        vlcJMediaPlayer.controls().setPosition(0.4f);
         timeSlider.setMin(0);
         long durationInMinutes = TimeUnit.MILLISECONDS.toMinutes(vlcJMediaPlayer.status().length());
         timeSlider.setMax(durationInMinutes);
-        timeSlider.setValue(0);
-
     }
 
     private synchronized void updateMediaPlayerPosition(float newValue) {
@@ -207,6 +216,34 @@ public class Controller implements Initializable {
         if (!tracking.get()) {
             timeSlider.setValue(newValue * 100);
         }
+    }
+
+    public static void serialize(ProgressTracker progressTracker, String serializedFileName ) throws IOException {
+        ObjectOutputStream objout = new ObjectOutputStream(new FileOutputStream(new File(serializedFileName)));
+        objout.writeObject(progressTracker);
+        objout.close();
+    }
+
+    public static ProgressTracker deSerialize(String serializedFileName)  {
+
+        try {
+            ObjectInputStream in = new ObjectInputStream(new FileInputStream(serializedFileName));
+            ProgressTracker progressTracker = (ProgressTracker) in.readObject();
+            return progressTracker;
+        } catch (ClassNotFoundException c) {
+            System.out.println(("There was an error " + c));
+//            logger.error("There was an error", c.toString());
+            return new ProgressTracker();
+        } catch (FileNotFoundException f) {
+            System.out.println(("There was an error " + f));
+//            logger.warn("No previous instance of the machine could be found", f.toString());
+            return new ProgressTracker();
+        } catch (IOException io) {
+            System.out.println(("There was an error " + io));
+//            logger.error("There was an error", io.toString());
+            return new ProgressTracker();
+        }
+
     }
 
 

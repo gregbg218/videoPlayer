@@ -30,6 +30,7 @@ public class Main extends Application {
 
     }
 
+
     public static void main(String[] args) {
         configureLogging("videoplayerlogs.log", "INFO");
         logger.info("Started Video Player");
