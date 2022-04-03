@@ -37,11 +37,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.caprica.vlcj.javafx.videosurface.ImageViewVideoSurfaceFactory.videoSurfaceForImageView;
 
 public class Controller implements Initializable {
 
+    private final AtomicBoolean tracking = new AtomicBoolean();
     EmbeddedMediaPlayer vlcJMediaPlayer;
     Stage stage ;
     public static Logger logger = LoggerFactory.getLogger(Controller.class);
@@ -96,20 +98,10 @@ public class Controller implements Initializable {
 
         widthProp.bind(Bindings.selectDouble(videoImageView.sceneProperty(), "width"));
         heightProp.bind(Bindings.selectDouble(videoImageView.sceneProperty(), "height"));
-
-
-        timeSlider.valueProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                if(timeSlider.isPressed())
-                {
-                    long position = (long) timeSlider.getValue()*60000;
-//                    vlcJMediaPlayer.seek(new Duration(position*60000));
-                    vlcJMediaPlayer.controls().setPosition(position);
-                }
-
-            }
-        });
+        
+        timeSlider.setOnMousePressed(mouseEvent -> beginTracking());
+        timeSlider.setOnMouseReleased(mouseEvent -> endTracking());
+        timeSlider.valueProperty().addListener((obs, oldValue, newValue) -> updateMediaPlayerPosition(newValue.floatValue() / 100));
     }
 
 
@@ -180,10 +172,8 @@ public class Controller implements Initializable {
         vlcJMediaPlayer.videoSurface().set(videoSurfaceForImageView(this.videoImageView));
         vlcJMediaPlayer.events().addMediaPlayerEventListener(new MediaPlayerEventAdapter() {
             @Override
-            public void timeChanged(MediaPlayer mediaPlayer, long newTime)
-            {
-                newTime=TimeUnit.MILLISECONDS.toMinutes(newTime);
-                timeSlider.setValue(newTime);
+            public void positionChanged(MediaPlayer mediaPlayer, float newPosition) {
+                Platform.runLater(() -> updateSliderPosition(newPosition));
             }
         });
 //        stackPane.setStyle("-fx-background-color: black;");
@@ -195,6 +185,28 @@ public class Controller implements Initializable {
         timeSlider.setMax(durationInMinutes);
         timeSlider.setValue(0);
 
+    }
+
+    private synchronized void updateMediaPlayerPosition(float newValue) {
+        if (tracking.get()) {
+            vlcJMediaPlayer.controls().setPosition(newValue);
+        }
+    }
+
+    private synchronized void beginTracking() {
+        tracking.set(true);
+    }
+
+    private synchronized void endTracking() {
+        tracking.set(false);
+        // This deals with the case where there was an absolute click in the timeline rather than a drag
+        vlcJMediaPlayer.controls().setPosition((float) timeSlider.getValue() / 100);
+    }
+
+    private synchronized void updateSliderPosition(float newValue) {
+        if (!tracking.get()) {
+            timeSlider.setValue(newValue * 100);
+        }
     }
 
 
